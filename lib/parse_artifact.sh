@@ -76,14 +76,14 @@ _parse_artifact()
               # run global condition command and skip collection if exit code is greater than 0
               if echo "${__pa_condition}" | grep -q -E "^!"; then
                 __pa_condition=`echo "${__pa_condition}" | sed -e 's|^! *||' 2>/dev/null`
-                if _run_command "${__pa_condition}" true >/dev/null; then
+                if _run_command "${__pa_condition}" true condition >/dev/null; then
                   _log_msg INF "Global condition '${__pa_condition}' not satisfied. Skipping..."
                   return 1
                 else
                   _log_msg DBG "Global condition '${__pa_condition}' satisfied"
                 fi
               else
-                if _run_command "${__pa_condition}" true >/dev/null; then
+                if _run_command "${__pa_condition}" true condition >/dev/null; then
                   _log_msg DBG "Global condition '${__pa_condition}' satisfied"
                 else
                   _log_msg INF "Global condition '${__pa_condition}' not satisfied. Skipping..."
@@ -235,11 +235,26 @@ _parse_artifact()
               continue
             fi
 
+            if [ -n "${UAC_DFIR_REQUEST:-}" ] && [ "${UAC_DFIR_NO_LIVE:-false}" = true ] \
+              && [ "${__pa_collector}" = command ]; then
+              _log_msg INF "Skipping command collector in file-only DFIR mode"
+              _cleanup_local_vars
+              continue
+            fi
+
+            if [ -n "${UAC_DFIR_REQUEST:-}" ] && [ "${__pa_collector}" != command ] \
+              && [ "${__pa_collector}" != file ]; then
+              "${UAC_DFIR_PYTHON:-python3}" "${__UAC_DIR}/tools/dfir_runtime.py" unsupported \
+                "${UAC_DFIR_REQUEST}" "${__pa_collector}" "${__UAC_CURRENT_ARTIFACT:-unknown}"
+              _cleanup_local_vars
+              continue
+            fi
+
             if [ -n "${__pa_condition}" ]; then
               # run local condition command and skip collection if exit code greater than 0
               if echo "${__pa_condition}" | grep -q -E "^!"; then
                 __pa_condition=`echo "${__pa_condition}" | sed -e 's|^! *||' 2>/dev/null`
-                if _run_command "${__pa_condition}" true >/dev/null; then
+                if _run_command "${__pa_condition}" true condition >/dev/null; then
                   _log_msg INF "Condition '${__pa_condition}' not satisfied. Skipping..."
                   _cleanup_local_vars
                   continue
@@ -247,7 +262,7 @@ _parse_artifact()
                   _log_msg DBG "Condition '${__pa_condition}' satisfied"
                 fi
               else
-                if _run_command "${__pa_condition}" true >/dev/null; then
+                if _run_command "${__pa_condition}" true condition >/dev/null; then
                   _log_msg DBG "Condition '${__pa_condition}' satisfied"
                 else
                   _log_msg INF "Condition '${__pa_condition}' not satisfied. Skipping..."
@@ -274,10 +289,11 @@ _parse_artifact()
               __pa_user_home_list="${__UAC_USER_HOME_LIST}"
               ${__pa_exclude_nologin_users} && __pa_user_home_list="${__UAC_VALID_SHELL_ONLY_USER_HOME_LIST}"
               __pa_processed_home=""
-              echo "${__pa_user_home_list}" \
-                | while read __pa_line && [ -n "${__pa_line}" ]; do
-                    __pa_user=`echo "${__pa_line}" | cut -d ":" -f 1`
-                    __pa_home=`echo "${__pa_line}" | cut -d ":" -f 2`
+              printf '%s\n' "${__pa_user_home_list}" \
+                | while IFS= read -r __pa_line || [ -n "${__pa_line}" ]; do
+                    [ -n "${__pa_line}" ] || continue
+                    __pa_user=`printf '%s\n' "${__pa_line}" | cut -d ":" -f 1`
+                    __pa_home=`printf '%s\n' "${__pa_line}" | cut -d ":" -f 2`
                    
                     _log_msg INF "Collecting data for user ${__pa_user}"
 

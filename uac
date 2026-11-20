@@ -337,7 +337,7 @@ _verbose_msg "Creating uac-data.tmp directory..."
 _init_temp_data_dir || _exit_fatal
 
 # clean up and exit if SIGINT (ctrl-c) is sent
-trap _terminate INT
+trap _terminate INT TERM
 
 # setup tools
 _verbose_msg "Setting up tools and parameters..."
@@ -350,7 +350,11 @@ __ua_cpu_info=`_get_cpu_info "${__UAC_OPERATING_SYSTEM}"`
 # get memory size
 __ua_memory_size=`_get_memory_size "${__UAC_OPERATING_SYSTEM}"`
 # get timezone
-__ua_timezone=`_get_timezone "${__UAC_MOUNT_POINT}" "${__UAC_OPERATING_SYSTEM}"`
+if [ -n "${UAC_DFIR_REQUEST:-}" ]; then
+  __ua_timezone="see acquired source configuration"
+else
+  __ua_timezone=`_get_timezone "${__UAC_MOUNT_POINT}" "${__UAC_OPERATING_SYSTEM}"`
+fi
 
 # show UAC banner and system information
 printf "%s\n" "--------------------------------------------------------------------------------"
@@ -399,7 +403,10 @@ _log_msg INF "Enable find atime: ${__UAC_CONF_ENABLE_FIND_ATIME}"
 _log_msg INF "Enable find ctime: ${__UAC_CONF_ENABLE_FIND_CTIME}"
 
 # get user list and their home directories (user:home)
-if [ "${__UAC_OPERATING_SYSTEM}" = "macos" ]; then
+if [ -n "${UAC_DFIR_REQUEST:-}" ]; then
+  __UAC_USER_HOME_LIST=`"${UAC_DFIR_PYTHON:-python3}" "${__UAC_DIR}/tools/dfir_runtime.py" homes "${UAC_DFIR_REQUEST}" false`
+  __UAC_VALID_SHELL_ONLY_USER_HOME_LIST=`"${UAC_DFIR_PYTHON:-python3}" "${__UAC_DIR}/tools/dfir_runtime.py" homes "${UAC_DFIR_REQUEST}" true`
+elif [ "${__UAC_OPERATING_SYSTEM}" = "macos" ]; then
   __UAC_USER_HOME_LIST=`_get_user_home_list false "${__UAC_MOUNT_POINT}" "/private/etc/passwd"`
   __UAC_VALID_SHELL_ONLY_USER_HOME_LIST=`_get_user_home_list true "${__UAC_MOUNT_POINT}" "/private/etc/passwd"`
 else
@@ -511,6 +518,7 @@ else
     __ua_collection_progress_timestamp=`date "+%Y-%m-%d %H:%M:%S %z"`
     printf "[%03d/%03d] %s %s\n" "${__ua_collection_progress}" "${__ua_collection_progress_total}" "${__ua_collection_progress_timestamp}" "${__ua_artifact_without_uac_dir}"
     _log_msg INF "Parsing ${__ua_artifact_without_uac_dir}"
+    __UAC_CURRENT_ARTIFACT="${__ua_artifact_without_uac_dir}"
     _parse_artifact "${__ua_artifact}"
   done <"${__UAC_TEMP_DATA_DIR}/artifact_list.tmp"
 fi
@@ -526,6 +534,21 @@ __ua_total_execution_time=`expr "${__ua_acquisition_end_date_epoch}" - "${__ua_a
 printf "%s\n" "--------------------------------------------------------------------------------"
 printf "Artifacts collection completed in %d seconds\n" "${__ua_total_execution_time}"
 _log_msg INF "Artifacts collection completed in ${__ua_total_execution_time} seconds"
+
+if [ -n "${UAC_DFIR_REQUEST:-}" ]; then
+  __ua_dfir_status=0
+  "${UAC_DFIR_PYTHON:-python3}" "${__UAC_DIR}/tools/dfir_runtime.py" finish "${UAC_DFIR_REQUEST}" \
+    "${__UAC_TEMP_DATA_DIR}" "${__UAC_ARTIFACTS_OUTPUT_DIR}" "${__UAC_MOUNT_POINT}" \
+    || __ua_dfir_status=${?}
+  case "${__ua_dfir_status}" in
+    0|3) ;;
+    *) _exit_fatal "DFIR finalization failed; partial evidence retained in '${__UAC_TEMP_DATA_DIR}'." ;;
+  esac
+  mv "${__UAC_ARTIFACTS_OUTPUT_DIR}" "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}" \
+    || _exit_fatal "DFIR output move failed; partial evidence retained in '${__UAC_TEMP_DATA_DIR}'."
+  _remove_temp_data_dir
+  exit "${__ua_dfir_status}"
+fi
 
 # prepare output
 printf "Filtering non-regular files...\n"

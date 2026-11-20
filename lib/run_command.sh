@@ -13,6 +13,15 @@ _run_command()
   __rc_command="${1:-}"
   __rc_redirect_stderr_to_stdout="${2:-false}"
   __rc_stderr_file="${__UAC_TEMP_DATA_DIR}/run_command.stderr.txt"
+
+  # The Linux launcher enables bounded subprocesses and structured outcomes.
+  # Ordinary UAC runs retain their portable in-process shell behavior.
+  if [ -n "${UAC_DFIR_REQUEST:-}" ]; then
+    "${UAC_DFIR_PYTHON:-python3}" "${__UAC_DIR}/tools/dfir_runtime.py" command \
+      "${UAC_DFIR_REQUEST}" "${__rc_command}" "${__rc_redirect_stderr_to_stdout}" \
+      "${3:-command}" "${__UAC_CURRENT_ARTIFACT:-initialization}"
+    return "${?}"
+  fi
   
   if [ -z "${__rc_command}" ]; then
     _log_msg ERR "_run_command: empty command parameter"

@@ -4,3 +4,10 @@ __pycache__/
 .venv/
 collections/
 uac-data.tmp.*
+.dfir-*/
+dfir_[0-9]*/
+dfir_[0-9]*.zip
+dfir_[0-9]*.tar
+dfir_[0-9]*.tar.gz
+dfir_[0-9]*.sha256
+dfir_[0-9]*.partial

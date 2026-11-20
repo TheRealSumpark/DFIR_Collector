@@ -90,6 +90,22 @@ _find_based_collector()
     return 1
   fi
 
+  if [ -n "${UAC_DFIR_REQUEST:-}" ] && [ "${__fc_collector}" = file ]; then
+    if [ "${__fc_no_user}" = true ] || [ "${__fc_no_group}" = true ] || [ -n "${__fc_exclude_file_system}" ]; then
+      "${UAC_DFIR_PYTHON:-python3}" "${__UAC_DIR}/tools/dfir_runtime.py" unsupported \
+        "${UAC_DFIR_REQUEST}" "file predicates: no_user/no_group/exclude_file_system" \
+        "${__UAC_CURRENT_ARTIFACT:-file_discovery}"
+      return 1
+    fi
+    "${UAC_DFIR_PYTHON:-python3}" "${__UAC_DIR}/tools/dfir_runtime.py" discover -- \
+      "${UAC_DFIR_REQUEST}" "${__fc_path}" "${__fc_is_file_list}" \
+      "${__fc_path_pattern}" "${__fc_name_pattern}" "${__fc_exclude_path_pattern}" \
+      "${__fc_exclude_name_pattern}" "${__fc_file_type}" "${__fc_max_depth}" \
+      "${__fc_min_file_size}" "${__fc_permissions}" "${__UAC_CURRENT_ARTIFACT:-file_discovery}" \
+      >>"${__UAC_TEMP_DATA_DIR}/file_collector.nul"
+    return "${?}"
+  fi
+
   if ${__fc_is_file_list}; then
     # prepend __UAC_TEMP_DATA_DIR/collected if path does not start with /
     if echo "${__fc_path}" | grep -q -v -E "^/"; then

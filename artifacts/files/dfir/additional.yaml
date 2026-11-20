@@ -1,0 +1,35 @@
+version: 1.0
+artifacts:
+  -
+    description: Collect additional SSH access configuration and principal files.
+    supported_os: [linux]
+    collector: file
+    path: %user_home%/.ssh/config %user_home%/.ssh/config.d %user_home%/.ssh/authorized_principals*
+  -
+    description: Collect database and additional shell histories.
+    supported_os: [linux]
+    collector: file
+    path: %user_home%/.python_history* %user_home%/.mysql_history* %user_home%/.psql_history* %user_home%/.sqlite_history* %user_home%/.rediscli_history* %user_home%/.sh_history* %user_home%/.ash_history*
+  -
+    description: Collect Docker container log rotations and configuration.
+    supported_os: [linux]
+    collector: file
+    path: /var/lib/docker/containers
+    name_pattern: ["*-json.log*", "config.v2.json", "hostconfig.json"]
+    file_type: [f, l]
+  -
+    description: Collect Kubernetes pod and container logs.
+    supported_os: [linux]
+    collector: file
+    path: /var/log/pods /var/log/containers
+    file_type: [f, l]
+  -
+    description: Collect operating system and package identity.
+    supported_os: [linux]
+    collector: file
+    path: /usr/lib/os-release /etc/os-release /etc/hostname /etc/machine-id /etc/timezone /etc/localtime
+  -
+    description: Collect service startup and dynamic loader persistence.
+    supported_os: [linux]
+    collector: file
+    path: /etc/ld.so.preload /etc/profile /etc/profile.d /etc/cron.d /etc/cron.daily /etc/cron.hourly /etc/cron.weekly /etc/cron.monthly /etc/anacrontab /var/lib/anacron /var/spool/atjobs /var/spool/atspool

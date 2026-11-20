@@ -16,8 +16,15 @@ The first implementation group fixes tar fallback and compression failure handli
 literal file-list copying, private unique temporary workspaces, secret redaction
 and secret-file/descriptor inputs. SHA-256 is now the default. Fork CI checks out
 this repository and uses pinned compatibility fixtures. Native ZIP and tar.gz
-collections are verified with synthetic mounted evidence. See
-[the implementation tracker](IMPLEMENTATION_PLAN.md) for remaining work.
+collections are verified with synthetic mounted evidence.
+
+The Linux launcher and confined backend now implement custom paths, file/query
+manifests, SHA-256 verification, command/output/storage limits, configured history
+and SSH path discovery, partial-evidence retention, and directory/tar/ZIP output.
+The focused profile and source coverage tracker are included. See
+[validation results](VALIDATION.md) and
+[the implementation tracker](IMPLEMENTATION_PLAN.md). Public GitHub publication
+remains blocked by API connectivity.
 
 ## Recommended direction
 

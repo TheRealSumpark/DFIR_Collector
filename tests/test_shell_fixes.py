@@ -195,6 +195,21 @@ _verbose_msg "password=$__UAC_OUTPUT_PASSWORD token=$__UAC_S3_TOKEN"
         self.assertEqual(result.stdout, value)
         self.assertFalse(marker.exists())
 
+    def test_placeholder_in_single_quotes_preserves_data_without_execution(self):
+        marker = self.base / "must-not-exist"
+        values = ["home'$(touch " + str(marker) + ")\\name", 'double"$HOME`literal`', "line\nbreak\\value"]
+        templates = ["printf %s %user_home%", 'printf %s "%user_home%"', "printf %s '%user_home%'"]
+        for value in values:
+            for template in templates:
+                with self.subTest(value=value, template=template):
+                    result = self.shell('''
+fragment=$(_replace_placeholder_shell_fragment "$FIXTURE_TEMPLATE" '%user_home%' "$FIXTURE_VALUE")
+eval "$fragment"
+''', FIXTURE_VALUE=value, FIXTURE_TEMPLATE=template)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, value)
+                    self.assertFalse(marker.exists())
+
     def test_trace_with_secrets_rejected_before_disclosure(self):
         result = subprocess.run([*SHELL, "./uac", "--trace", "-P", "dummy-password"],
                                 cwd=REPOSITORY, capture_output=True, text=True, timeout=10)

@@ -1,3 +1,15 @@
+# DFIR_Collector
+
+Linux DFIR collection built on UAC, with custom paths, private evidence storage,
+structured reports, SHA-256 verification, and ZIP/tar output.
+
+```shell
+sudo python3 dfir.py --output /mnt/evidence --complete-logs --format zip
+```
+
+Start with the [launcher guide](docs/LINUX_DFIR.md) and
+[source coverage tracker](ARTIFACTS.md). The upstream UAC documentation follows.
+
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-disable MD041 -->
 <p align="center">
@@ -162,7 +174,31 @@ The UAC project uses the [Apache License Version 2.0](LICENSE) software license.
 
 ## Linux DFIR development review
 
-See the [prioritized improvement review](docs/DFIR_IMPROVEMENTS.md) for proposed
-evidence-handling fixes and a focused Linux collection workflow. Run the optional
-developer checks with `python3 tools/review_uac.py`; they use dummy evidence in
-temporary directories and mounted fixture trees.
+This fork adds a Linux launcher with custom paths, acquisition reports, bounded
+commands, private evidence storage, SHA-256 verification, and ZIP/tar output.
+Python 3.9+ is required for the launcher; it needs no third-party Python packages.
+The original portable `./uac` interface remains available.
+
+```shell
+# Collect all retained regular log files plus the focused Linux DFIR profile.
+sudo python3 dfir.py --output /mnt/evidence --complete-logs --format zip
+
+# Add application sources. Quote globs so your shell does not expand them.
+sudo python3 dfir.py --output /mnt/evidence --path /srv/app/logs --path '/opt/app/audit/*.log*'
+
+# Acquire an already mounted evidence filesystem without live commands.
+python3 dfir.py --root /mnt/linux-image --output /mnt/evidence --format tar.gz
+```
+
+Read the [Linux launcher guide](docs/LINUX_DFIR.md),
+[source coverage tracker](ARTIFACTS.md), and
+[implementation tracker](docs/IMPLEMENTATION_PLAN.md).
+The [review](docs/DFIR_IMPROVEMENTS.md) records the baseline findings and fixes.
+
+```shell
+python3 -m unittest discover -s tests -v
+```
+
+Tests use synthetic evidence and mounted fixture trees. Collection output is
+sensitive and must be kept separate from source publication. Generated collection
+names and the default `collections/` directory are ignored by Git.

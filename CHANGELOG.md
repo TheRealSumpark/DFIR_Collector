@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased — DFIR_Collector fork
+
+- Add `dfir.py` and a focused `linux_dfir` profile with repeatable custom paths,
+  mounted-source acquisition, configuration discovery, and ZIP/tar/directory output.
+- Add root-confined file selection/copying, NUL-delimited path transport, source
+  metadata and SHA-256 manifests, command outcomes, limits and storage checks.
+- Preserve partial evidence with recovery reports on failure/cancellation.
+- Fix tar fallback/compression failure handling and literal filename copying.
+- Use private unique temporary workspaces; redact secrets and support secret-file inputs.
+- Default native hashing to SHA-256 and test the fork checkout with pinned fixtures.
+- Document source coverage, usage, limitations and local validation results.
+
 ## 3.4.0 (2026-09-08)
 
 ### Highlights

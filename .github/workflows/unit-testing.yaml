@@ -1,6 +1,11 @@
 name: Unit testing
 
 on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'review/**'
   pull_request:
     branches:
       - develop
@@ -13,9 +18,15 @@ on:
       - 'tools/**'
       - 'tests/**'
       - '.github/workflows/unit-testing.yaml'
+      - 'artifacts/**'
+      - 'profiles/**'
+      - 'config/**'
       
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -28,11 +39,17 @@ jobs:
         with:
           path: uac
 
+      - name: Install native test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y busybox zip
+
       - name: Run fork regression tests with multiple shells
         working-directory: uac
         run: |
+          python3 -m unittest discover -s tests -p test_dfir.py -v
           for test_shell in '/bin/dash' '/bin/bash' 'busybox sh'; do
-            UAC_TEST_SHELL="$test_shell" python3 -m unittest discover -s tests -v
+            UAC_TEST_SHELL="$test_shell" python3 -m unittest discover -s tests -p test_shell_fixes.py -v
           done
 
       - name: Checkout ushunit repository
@@ -52,6 +69,7 @@ jobs:
       - name: Run tests
         working-directory: ushunit
         run: |
+          python3 ../uac/tools/prepare_compat_tests.py ../uac-tests
           # These helper contracts changed intentionally and have fork fixtures.
           # The upstream main-script suite also collects live /etc; fork integration
           # tests use synthetic mounted trees instead.

@@ -1,0 +1,143 @@
+version: 1.0
+output_directory: /live_response/dfir
+artifacts:
+  -
+    description: Running processes and command lines.
+    supported_os: [linux]
+    condition: command_exists "ps"
+    collector: command
+    command: ps -eo pid,ppid,uid,gid,lstart,etime,args --ww
+    output_file: processes.txt
+  -
+    description: Numeric sockets and owning processes.
+    supported_os: [linux]
+    condition: command_exists "ss"
+    collector: command
+    command: ss -anep
+    output_file: sockets.txt
+  -
+    description: Interfaces and addresses.
+    supported_os: [linux]
+    condition: command_exists "ip"
+    collector: command
+    command: ip -details address show
+    output_file: interfaces.txt
+  -
+    description: IPv4 routing tables.
+    supported_os: [linux]
+    condition: command_exists "ip"
+    collector: command
+    command: ip route show table all
+    output_file: routes_ipv4.txt
+  -
+    description: IPv6 routing tables.
+    supported_os: [linux]
+    condition: command_exists "ip"
+    collector: command
+    command: ip -6 route show table all
+    output_file: routes_ipv6.txt
+  -
+    description: Neighbor cache.
+    supported_os: [linux]
+    condition: command_exists "ip"
+    collector: command
+    command: ip neigh show
+    output_file: neighbors.txt
+  -
+    description: Open file handles without DNS lookup.
+    supported_os: [linux]
+    condition: command_exists "lsof"
+    collector: command
+    command: lsof -nP -l
+    output_file: open_files.txt
+  -
+    description: User sessions.
+    supported_os: [linux]
+    condition: command_exists "who"
+    collector: command
+    command: who -a
+    output_file: sessions.txt
+  -
+    description: Host uptime.
+    supported_os: [linux]
+    condition: command_exists "uptime"
+    collector: command
+    command: uptime
+    output_file: uptime.txt
+  -
+    description: Kernel identity.
+    supported_os: [linux]
+    condition: command_exists "uname"
+    collector: command
+    command: uname -a
+    output_file: kernel_identity.txt
+  -
+    description: Mounted filesystems.
+    supported_os: [linux]
+    condition: command_exists "findmnt"
+    collector: command
+    command: findmnt --all
+    output_file: mounts.txt
+  -
+    description: Loaded kernel modules.
+    supported_os: [linux]
+    condition: command_exists "cat"
+    collector: command
+    command: cat /proc/modules
+    output_file: modules.txt
+  -
+    description: Kernel ring buffer.
+    supported_os: [linux]
+    condition: command_exists "dmesg"
+    collector: command
+    command: dmesg --raw
+    output_file: kernel_messages.txt
+  -
+    description: Systemd services.
+    supported_os: [linux]
+    condition: command_exists "systemctl"
+    collector: command
+    command: systemctl list-units --all --no-pager
+    output_file: systemd_services.txt
+  -
+    description: Systemd unit files.
+    supported_os: [linux]
+    condition: command_exists "systemctl"
+    collector: command
+    command: systemctl list-unit-files --no-pager
+    output_file: systemd_units.txt
+  -
+    description: Systemd timers.
+    supported_os: [linux]
+    condition: command_exists "systemctl"
+    collector: command
+    command: systemctl list-timers --all --no-pager
+    output_file: systemd_timers.txt
+  -
+    description: Audit daemon status.
+    supported_os: [linux]
+    condition: command_exists "auditctl"
+    collector: command
+    command: auditctl -s
+    output_file: audit_status.txt
+  -
+    description: Loaded audit rules.
+    supported_os: [linux]
+    condition: command_exists "auditctl"
+    collector: command
+    command: auditctl -l
+    output_file: audit_rules.txt
+  -
+    description: Active nftables firewall rules.
+    supported_os: [linux]
+    condition: command_exists "nft"
+    collector: command
+    command: nft list ruleset
+    output_file: firewall.txt
+  -
+    description: Available journal entries as JSON lines; raw journals are separate.
+    supported_os: [linux]
+    condition: command_exists "journalctl"
+    collector: command
+    command: journalctl --no-pager --all --output=json
+    output_file: journal.jsonl

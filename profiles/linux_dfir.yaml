@@ -1,0 +1,23 @@
+name: linux_dfir
+description: Focused Linux DFIR collection; use dfir.py for bounded commands, safe file copies and ZIP or tar output.
+artifacts:
+  - live_response/dfir/snapshot.yaml
+  - files/logs/var_log.yaml
+  - files/logs/run_log.yaml
+  - files/logs/journal.yaml
+  - files/shell/*
+  - files/ssh/*
+  - files/system/etc.yaml
+  - files/system/job_scheduler.yaml
+  - files/system/systemd.yaml
+  - files/system/utmp.yaml
+  - files/system/networkmanager.yaml
+  - files/system/udev.yaml
+  - files/system/upstart.yaml
+  - files/system/xdg_autostart.yaml
+  - files/packages/*
+  - files/applications/lesshst.yaml
+  - files/applications/viminfo.yaml
+  - files/applications/nano.yaml
+  - files/applications/wget.yaml
+  - files/dfir/additional.yaml

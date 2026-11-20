@@ -9,7 +9,7 @@
 # Replacement rules:
 #   - Inside double quotes: escape \, ", $, ` in value; insert as-is
 #   - outside any quotes:   escape \, ", $, ` in value; wrap in double quotes
-#   - Inside single quotes: insert value verbatim (no escaping needed)
+#   - Inside single quotes: close the quote, escape apostrophes, reopen the quote
 #
 # Arguments:
 #   string input: shell fragment to process
@@ -29,13 +29,27 @@ _replace_placeholder_shell_fragment()
   fi
 
   printf "%s" "${__rp_input}" \
-    | awk \
-      -v placeholder="${__rp_placeholder}" \
-      -v value="${__rp_value}" \
+    | UAC_PLACEHOLDER_TOKEN="${__rp_placeholder}" UAC_PLACEHOLDER_VALUE="${__rp_value}" awk \
       'BEGIN {
+        placeholder = ENVIRON["UAC_PLACEHOLDER_TOKEN"]
+        value = ENVIRON["UAC_PLACEHOLDER_VALUE"]
         escaped_value = escape_for_double_quotes(value)
         placeholder_len = length(placeholder)
         single_quote_char = sprintf("%c", 39)
+        escaped_single_value = escape_for_single_quotes(value)
+      }
+
+      function escape_for_single_quotes(str) {
+        result = ""
+        for (k = 1; k <= length(str); k++) {
+          ch = substr(str, k, 1)
+          if (ch == single_quote_char) {
+            result = result single_quote_char "\"" single_quote_char "\"" single_quote_char
+          } else {
+            result = result ch
+          }
+        }
+        return result
       }
 
       function escape_for_double_quotes(str) {
@@ -64,7 +78,7 @@ _replace_placeholder_shell_fragment()
             if (state == 1) {
               output = output escaped_value
             } else if (state == 2) {
-              output = output value
+              output = output escaped_single_value
             } else {
               output = output "\"" escaped_value "\""
             }
