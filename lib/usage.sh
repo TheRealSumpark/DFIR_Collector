@@ -54,6 +54,13 @@ Output Arguments:
                     Specify the password to be used to encrypt the contents
                     of the archive file.
                     Applies to zip output format only.
+      --secrets-file FILE
+                    Read secret key=value settings from a private file or an
+                    open descriptor path, such as /dev/fd/3. Values are literal.
+                    Keys: output_password, s3_access_key, s3_secret_key, s3_token,
+                    aws_s3_presigned_url, aws_s3_presigned_url_log_file,
+                    azure_storage_sas_url. Later options override earlier ones.
+                    Shell tracing is disabled when secrets are configured.
 
 Collection Arguments:
   -c, --config      FILE

@@ -17,30 +17,18 @@ _tar_gz_data()
     return 1
   fi
 
-  __tg_tar_command="tar -T \"${__tg_from_file}\" -cf - | gzip >\"${__tg_destination_file}\""
-  case "${__UAC_OPERATING_SYSTEM}" in
-    "aix")
-      __tg_tar_command="tar -L \"${__tg_from_file}\" -cf - | gzip >\"${__tg_destination_file}\""
-      ;;
-    "freebsd"|"netbsd"|"netscaler"|"openbsd")
-      __tg_tar_command="tar -I \"${__tg_from_file}\" -cf - | gzip >\"${__tg_destination_file}\""
-      ;;
-    "esxi"|"linux")
-      if ${__UAC_TOOL_TAR_NO_FROM_FILE_SUPPORT}; then
-        __tg_tar_command="tar -cf - * | gzip >\"${__tg_destination_file}\""
-      fi
-      ;;
-    "macos")
-      true
-      ;;
-    "solaris")
-      __tg_tar_command="tar -cf - -I \"${__tg_from_file}\" | gzip >\"${__tg_destination_file}\""
-      ;;
-  esac
-
-  _verbose_msg "${__UAC_VERBOSE_CMD_PREFIX}${__tg_tar_command}"
-  eval "${__tg_tar_command}" \
-    >>"${__UAC_TEMP_DATA_DIR}/tar_gz_data.stdout.txt" \
+  __tg_fifo="${__UAC_TEMP_DATA_DIR}/tar-gzip.${$}.fifo"
+  mkfifo "${__tg_fifo}" || return 1
+  _verbose_msg "Archiving and compressing selected files to '${__tg_destination_file}'"
+  gzip <"${__tg_fifo}" >"${__tg_destination_file}" \
+    2>>"${__UAC_TEMP_DATA_DIR}/tar_gz_data.stderr.txt" &
+  __tg_gzip_pid=${!}
+  # Open the FIFO before executing tar so even early tar failures close the writer.
+  _tar_archive "${__tg_from_file}" - >"${__tg_fifo}" \
     2>>"${__UAC_TEMP_DATA_DIR}/tar_gz_data.stderr.txt"
-
+  __tg_tar_status=${?}
+  wait "${__tg_gzip_pid}"
+  __tg_gzip_status=${?}
+  rm -f "${__tg_fifo}"
+  [ "${__tg_tar_status}" -eq 0 ] && [ "${__tg_gzip_status}" -eq 0 ]
 }

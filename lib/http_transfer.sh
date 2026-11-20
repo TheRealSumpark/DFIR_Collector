@@ -17,8 +17,7 @@ _http_transfer()
   __ht_headers="${3:-}"
 
   if command_exists "curl"; then
-    __ht_verbose="--fail"
-    ${__UAC_VERBOSE_MODE} && __ht_verbose="--verbose"
+    __ht_verbose="--silent --show-error --fail --output /dev/null"
     if [ -f "${__ht_payload}" ]; then
       __ht_command="curl \
 ${__ht_verbose} \
@@ -37,11 +36,10 @@ ${__ht_headers} \
   
   else
     __ht_verbose="--quiet"
-    ${__UAC_VERBOSE_MODE} && __ht_verbose="--verbose"
     if [ -f "${__ht_payload}" ]; then
       __ht_command="wget \
 ${__ht_verbose} \
---output-document - \
+--output-document /dev/null \
 --no-check-certificate \
 --method PUT \"${__ht_url}\" \
 ${__ht_headers} \
@@ -49,7 +47,7 @@ ${__ht_headers} \
     else
       __ht_command="wget \
 ${__ht_verbose} \
---output-document - \
+--output-document /dev/null \
 --no-check-certificate \
 --method PUT \"${__ht_url}\" \
 ${__ht_headers} \
@@ -57,7 +55,7 @@ ${__ht_headers} \
     fi
   fi
 
-  _verbose_msg "${__UAC_VERBOSE_CMD_PREFIX}${__ht_command}"
+  _verbose_msg "Uploading evidence with HTTP PUT (URL and authentication omitted)"
 	eval "${__ht_command}"
 
 }

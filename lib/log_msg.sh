@@ -1,5 +1,6 @@
 #!/bin/sh
 # SPDX-License-Identifier: Apache-2.0
+# shellcheck disable=SC2006
 
 # Log message.
 # Arguments:
@@ -23,6 +24,7 @@ _log_msg()
 
   # shellcheck disable=SC2006
   __lm_timestamp=`date "+%Y-%m-%d %H:%M:%S %z"`
+  __lm_message=`_redact_secrets "${__lm_message}"`
   printf "%s %s %s\n" "${__lm_timestamp}" "${__lm_level}" "${__lm_message}" \
     >>"${__UAC_TEMP_DATA_DIR}/${__UAC_LOG_FILE}" 2>/dev/null
   

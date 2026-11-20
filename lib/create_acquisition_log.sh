@@ -52,12 +52,6 @@ else
 File: ${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}
 Format: ${__UAC_OUTPUT_FORMAT}
 EOF
-  if [ "${__UAC_OUTPUT_FORMAT}" = "zip" ] && [ -n "${__UAC_OUTPUT_PASSWORD}" ]; then
-    cat >>"${__cl_file}" << EOF
-Password: "${__UAC_OUTPUT_PASSWORD}"
-EOF
-  fi
-
   cat >>"${__cl_file}" << EOF
 
 [Computed Hashes]

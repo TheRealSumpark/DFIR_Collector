@@ -260,6 +260,15 @@ _parse_command_line_arguments()
         fi
         ;;
       # remote transfer arguments
+      "--secrets-file")
+        if [ -n "${2:-}" ]; then
+          _load_secrets "${2}" || return 1
+          shift
+        else
+          _error_msg "Option '--secrets-file' requires a path or descriptor."
+          return 1
+        fi
+        ;;
       "--sftp")
         if [ -n "${2:-}" ]; then
           __UAC_SFTP="${2}"

@@ -8,8 +8,7 @@
 #   integer: exit code 130
 _terminate()
 {
-  printf "\n%s\n" "Caught signal! Cleaning up and quitting..."
-  _remove_temp_data_dir
+  printf "\n%s\n" "Caught signal; partial evidence retained in '${__UAC_TEMP_DATA_DIR}'."
   exit 130
 
 }

@@ -8,6 +8,9 @@
 # remove LD_PRELOAD environment variable
 unset LD_PRELOAD
 
+# Evidence and reports must not inherit a permissive caller umask.
+umask 077
+
 # set locale
 LANG=C
 export LANG
@@ -28,12 +31,11 @@ if [ ! -d "${__UAC_DIR}/artifacts" ] || [ ! -d "${__UAC_DIR}/bin" ] \
   exit 1
 fi
 
-# save current command line
-# shellcheck disable=SC2124
-__ua_command_line="${0} ${@}"
-
 # load lib files
 . "${__UAC_DIR}/lib/load_libraries.sh"
+
+# Keep only the redacted invocation; secret option values never enter the log.
+__ua_command_line=`_redact_command_line "${0}" "${@}"`
 
 if [ -z "${1}" ]; then
   _usage
@@ -104,6 +106,10 @@ __UAC_EXCLUDE_MOUNT_POINTS=""
 __UAC_TEMP_DATA_DIR_NO_SYMLINK_SUPPORT=true
 
 _parse_command_line_arguments "${@}" || _exit_fatal
+
+if ${__UAC_TRACE_MODE} && _has_secrets; then
+  _exit_fatal "Shell tracing cannot be combined with archive passwords or transfer credentials."
+fi
 
 # do not allow using undefined variables
 # set -u cannot be set at the beginning of the script since it will fail on $@
@@ -555,7 +561,8 @@ mv "${__UAC_TEMP_DATA_DIR}/${__UAC_LOG_FILE}" "${__UAC_ARTIFACTS_OUTPUT_DIR}" 2>
 if [ "${__UAC_OUTPUT_FORMAT}" = "none" ] || ${__UAC_HASH_COLLECTED} || ${__UAC_TEMP_DATA_DIR_NO_SYMLINK_SUPPORT} || ${__UAC_TOOL_TAR_NO_FROM_FILE_SUPPORT}; then
   printf "Copying files to '%s'...\n" "${__UAC_ARTIFACTS_OUTPUT_DIR}/[root]"
   _copy_data "${__UAC_TEMP_DATA_DIR}/file_collector.tmp" "${__UAC_ARTIFACTS_OUTPUT_DIR}/[root]" \
-    2>>"${__UAC_TEMP_DATA_DIR}/copy_data.stderr.txt"
+    2>>"${__UAC_TEMP_DATA_DIR}/copy_data.stderr.txt" \
+    || _exit_fatal "File copying failed; partial evidence retained in '${__UAC_TEMP_DATA_DIR}'."
 
   if ${__UAC_HASH_COLLECTED}; then
     printf "Calculating hashes for collected files...\n"
@@ -590,13 +597,13 @@ fi
 
 if [ "${__UAC_OUTPUT_FORMAT}" = "none" ]; then
   printf "Moving files to the output directory...\n"
-  mv "${__UAC_ARTIFACTS_OUTPUT_DIR}" "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}"
+  mv "${__UAC_ARTIFACTS_OUTPUT_DIR}" "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}" \
+    || _exit_fatal "Output move failed; partial evidence retained in '${__UAC_TEMP_DATA_DIR}'."
   if [ -d "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}" ]; then
     printf "Output directory successfully created: '%s'\n" "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}"
     _remove_temp_data_dir
   else
-    _error_msg "Failed to create output directory: '${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}'"
-    _error_msg "Check the collected artifacts in '${__UAC_TEMP_DATA_DIR}' for issues."
+    _exit_fatal "Output directory missing; partial evidence retained in '${__UAC_TEMP_DATA_DIR}'."
   fi
 else
   printf "Creating the output file...\n"
@@ -605,34 +612,34 @@ else
   # add files to the beginning of the archive file
   {
     echo "${__UAC_LOG_FILE}";
-    echo "hash_list.md5";
-    echo "hash_list.sha1";
-    echo "hash_list.sha256";
+    for __ua_hash_list in hash_list.md5 hash_list.sha1 hash_list.sha256; do
+      [ ! -f "${__ua_hash_list}" ] || printf '%s\n' "${__ua_hash_list}"
+    done
   } >"${__UAC_TEMP_DATA_DIR}/output.tmp"
   cat "${__UAC_TEMP_DATA_DIR}/pre_output.tmp" >>"${__UAC_TEMP_DATA_DIR}/output.tmp"
 
+  __ua_archive_status=0
   case "${__UAC_OUTPUT_EXTENSION}" in
     "tar")
       _tar_data "${__UAC_TEMP_DATA_DIR}/output.tmp" \
-        "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}"
+        "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}" || __ua_archive_status=1
       ;;
     "tar.gz")
       _tar_gz_data "${__UAC_TEMP_DATA_DIR}/output.tmp" \
-        "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}"
+        "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}" || __ua_archive_status=1
       ;;
     "zip")
       _zip_data "${__UAC_TEMP_DATA_DIR}/output.tmp" \
         "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}" \
-        "${__UAC_OUTPUT_PASSWORD}"
+        "${__UAC_OUTPUT_PASSWORD}" || __ua_archive_status=1
       ;;
   esac
   cd "${__UAC_DIR}" || _exit_fatal "cd: ${__UAC_DIR}: No such file or directory"
-  if [ -f "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}" ]; then
+  if [ "${__ua_archive_status}" -eq 0 ] && [ -s "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}" ]; then
     printf "Output file created: '%s'\n" "${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}"
     _remove_temp_data_dir
   else
-    _error_msg "Failed to create output file: '${__UAC_DESTINATION_DIR}/${__UAC_OUTPUT_BASE_NAME}.${__UAC_OUTPUT_EXTENSION}'"
-    _error_msg "Check the collected artifacts in '${__UAC_TEMP_DATA_DIR}' for issues."
+    _exit_fatal "Archiving failed; partial evidence retained in '${__UAC_TEMP_DATA_DIR}'."
   fi
 fi
 

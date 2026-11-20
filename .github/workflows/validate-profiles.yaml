@@ -27,6 +27,6 @@ jobs:
         run: |
           find profiles/* -name "*.yaml" -type f \
             | while read file || [ -n "${file}" ]; do
-                ./uac --validate-profile "${file}"
+                ./uac --validate-profile "${file}" || exit 1
               done
-      
+

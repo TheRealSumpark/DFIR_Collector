@@ -19,14 +19,14 @@ _zip_data()
     return 1
   fi
 
-  __zd_zip_command="zip -6 -r \"${__zd_destination_file}\" -@ <\"${__zd_from_file}\""
+  _verbose_msg "Creating ZIP archive '${__zd_destination_file}' (password omitted)"
   if [ -n "${__zd_password}" ]; then
-    __zd_zip_command="zip -6 -r --password \"${__zd_password}\" \"${__zd_destination_file}\" -@ <\"${__zd_from_file}\""
+    zip -6 -r --password "${__zd_password}" "${__zd_destination_file}" -@ \
+      <"${__zd_from_file}" >>"${__UAC_TEMP_DATA_DIR}/zip_data.stdout.txt" \
+      2>>"${__UAC_TEMP_DATA_DIR}/zip_data.stderr.txt"
+  else
+    zip -6 -r "${__zd_destination_file}" -@ \
+      <"${__zd_from_file}" >>"${__UAC_TEMP_DATA_DIR}/zip_data.stdout.txt" \
+      2>>"${__UAC_TEMP_DATA_DIR}/zip_data.stderr.txt"
   fi
-
-  _verbose_msg "${__UAC_VERBOSE_CMD_PREFIX}${__zd_zip_command}"
-  eval "${__zd_zip_command}" \
-    >>"${__UAC_TEMP_DATA_DIR}/zip_data.stdout.txt" \
-    2>>"${__UAC_TEMP_DATA_DIR}/zip_data.stderr.txt"
-
 }

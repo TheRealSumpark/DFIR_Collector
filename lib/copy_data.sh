@@ -6,7 +6,7 @@
 #   string from_file: file containing the list of files to be copied
 #   string destination_file: destination directory
 # Returns:
-#   none
+#   integer: zero on success, nonzero if any copy failed
 _copy_data()
 {
   __cd_from_file="${1:-}"
@@ -17,12 +17,37 @@ _copy_data()
     return 1
   fi
 
-  # shellcheck disable=SC2162  
-  while read __cd_line && [ -n "${__cd_line}" ]; do
-    # shellcheck disable=SC2006
-    __cd_dirname=`dirname "${__cd_line}" | sed -e "s|^${__UAC_MOUNT_POINT}|/|" -e "s|^${__UAC_ARTIFACTS_OUTPUT_DIR}|/|"`
-    mkdir -p "${__cd_destination_directory}/${__cd_dirname}"
-    cp -r "${__cd_line}" "${__cd_destination_directory}/${__cd_dirname}"
+  __cd_status=0
+  while IFS= read -r __cd_line || [ -n "${__cd_line}" ]; do
+    [ -n "${__cd_line}" ] || continue
+    case "${__cd_line}" in
+      /*) ;;
+      *) __cd_line="./${__cd_line}" ;;
+    esac
+    __cd_relative="${__cd_line}"
+    case "${__cd_line}" in
+      "${__UAC_ARTIFACTS_OUTPUT_DIR}"/*)
+        __cd_relative="${__cd_line#"${__UAC_ARTIFACTS_OUTPUT_DIR}"/}" ;;
+      "${__UAC_MOUNT_POINT%/}"/*)
+        __cd_relative="${__cd_line#"${__UAC_MOUNT_POINT%/}"/}" ;;
+    esac
+    __cd_relative="${__cd_relative#/}"
+    case "/${__cd_relative}/" in
+      */../*)
+        _error_msg "Refusing parent traversal in file list."
+        __cd_status=1
+        continue ;;
+    esac
+    # Parameter expansion preserves literal backslashes and trailing whitespace.
+    case "${__cd_relative}" in
+      */*) __cd_dirname="${__cd_relative%/*}" ;;
+      *) __cd_dirname="." ;;
+    esac
+    if mkdir -p "${__cd_destination_directory}/${__cd_dirname}"; then
+      cp -r "${__cd_line}" "${__cd_destination_directory}/${__cd_dirname}" || __cd_status=1
+    else
+      __cd_status=1
+    fi
   done <"${__cd_from_file}"
-
+  return "${__cd_status}"
 }

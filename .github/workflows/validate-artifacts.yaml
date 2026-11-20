@@ -27,5 +27,5 @@ jobs:
         run: |
           find artifacts/* -name "*.yaml" -type f \
             | while read file || [ -n "${file}" ]; do
-                ./uac --validate-artifact "${file}"
+                ./uac --validate-artifact "${file}" || exit 1
               done

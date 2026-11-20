@@ -165,4 +165,4 @@ The UAC project uses the [Apache License Version 2.0](LICENSE) software license.
 See the [prioritized improvement review](docs/DFIR_IMPROVEMENTS.md) for proposed
 evidence-handling fixes and a focused Linux collection workflow. Run the optional
 developer checks with `python3 tools/review_uac.py`; they use dummy evidence in
-temporary directories and do not run a host collection.
+temporary directories and mounted fixture trees.

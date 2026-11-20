@@ -10,6 +10,15 @@ The local checkout is ready for development. An account-owned GitHub fork has
 **not** been created: GitHub API access from this environment is unavailable.
 Public visibility is authorized; no further visibility confirmation is needed.
 
+## Implementation status
+
+The first implementation group fixes tar fallback and compression failure handling,
+literal file-list copying, private unique temporary workspaces, secret redaction
+and secret-file/descriptor inputs. SHA-256 is now the default. Fork CI checks out
+this repository and uses pinned compatibility fixtures. Native ZIP and tar.gz
+collections are verified with synthetic mounted evidence. See
+[the implementation tracker](IMPLEMENTATION_PLAN.md) for remaining work.
+
 ## Recommended direction
 
 Use UAC's existing collection engine and artifact catalog as the foundation.
@@ -57,9 +66,10 @@ security audit.
   syntax check completed successfully.
 - Four isolated helper reproductions confirmed the temporary permission behavior,
   cleartext dummy ZIP password, backslash filename copy failure and tar fallback.
-  Re-run with `python3 tools/review_uac.py` from this repository root.
-- The upstream collection engine and artifact definitions are unchanged; this
-  branch adds the review and its isolated reproduction helper. No full live-host collection,
+  The original reproductions are preserved in commit `9d86bb9`. The current
+  `python3 tools/review_uac.py` verifies corrected behavior.
+- The baseline review was performed before implementation. The branch now includes
+  the fixes and regression checks tracked above. No full live-host collection,
   remote upload, upstream issue, pull request or GitHub Actions run was performed.
 - The separate Python collector prototype passed 22 fixture-based tests. Its
   checksums, manifests, safe path handling and bounded commands provide useful

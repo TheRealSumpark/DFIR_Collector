@@ -51,6 +51,7 @@
 . "${__UAC_DIR}/lib/parse_artifact.sh"
 . "${__UAC_DIR}/lib/parse_command_line_arguments.sh"
 . "${__UAC_DIR}/lib/parse_profile.sh"
+. "${__UAC_DIR}/lib/redact_secrets.sh"
 . "${__UAC_DIR}/lib/prepend_mount_point.sh"
 . "${__UAC_DIR}/lib/replace_placeholder_plain_text.sh"
 . "${__UAC_DIR}/lib/replace_placeholder_shell_fragment.sh"

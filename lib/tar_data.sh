@@ -1,6 +1,27 @@
 #!/bin/sh
 # SPDX-License-Identifier: Apache-2.0
 
+# Execute tar with positional arguments, without evaluating paths as shell code.
+# The fallback archives the already staged directory, including its dotfiles.
+_tar_archive()
+{
+  case "${__UAC_OPERATING_SYSTEM}" in
+    "aix") tar -L "${1}" -cf "${2}" ;;
+    "freebsd"|"netbsd"|"netscaler"|"openbsd") tar -I "${1}" -cf "${2}" ;;
+    "esxi"|"linux")
+      if ${__UAC_TOOL_TAR_NO_FROM_FILE_SUPPORT}; then
+        tar -cf "${2}" .
+      elif tar --help 2>/dev/null | grep -q -e '--verbatim-files-from'; then
+        tar --verbatim-files-from -T "${1}" -cf "${2}"
+      else
+        tar -T "${1}" -cf "${2}"
+      fi
+      ;;
+    "solaris") tar -cf "${2}" -I "${1}" ;;
+    *) tar -T "${1}" -cf "${2}" ;;
+  esac
+}
+
 # Archive files and directories.
 # Arguments:
 #   string from_file: file containing the list of files to be archived
@@ -17,29 +38,8 @@ _tar_data()
     return 1
   fi
 
-  __td_tar_command="tar -T \"${__td_from_file}\" -cf \"${__td_destination_file}\""
-  case "${__UAC_OPERATING_SYSTEM}" in
-    "aix")
-      __td_tar_command="tar -L \"${__td_from_file}\" -cf \"${__td_destination_file}\""
-      ;;
-    "freebsd"|"netbsd"|"netscaler"|"openbsd")
-      __td_tar_command="tar -I \"${__td_from_file}\" -cf \"${__td_destination_file}\""
-      ;;
-    "esxi"|"linux")
-      if ${__UAC_TOOL_TAR_NO_FROM_FILE_SUPPORT}; then
-        __tg_tar_command="tar -cf \"${__td_destination_file}\" *"
-      fi
-      ;;
-    "macos")
-      true
-      ;;
-    "solaris")
-      __td_tar_command="tar -cf \"${__td_destination_file}\" -I \"${__td_from_file}\""
-      ;;
-  esac
-
-  _verbose_msg "${__UAC_VERBOSE_CMD_PREFIX}${__td_tar_command}"
-  eval "${__td_tar_command}" \
+  _verbose_msg "Archiving selected files to '${__td_destination_file}'"
+  _tar_archive "${__td_from_file}" "${__td_destination_file}" \
     >>"${__UAC_TEMP_DATA_DIR}/tar_data.stdout.txt" \
     2>>"${__UAC_TEMP_DATA_DIR}/tar_data.stderr.txt"
 
